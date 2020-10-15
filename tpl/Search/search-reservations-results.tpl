@@ -139,7 +139,7 @@ $(function () {
 			<td class="created">{formatdate date=$reservation->ModifiedDate timezone=$Timezone key=short_datetime}</td>
 			<td class="description">{if $reservation->billable eq '1'}Yes{else}No{/if}</td>
 			<td class="action no-edit">
-			<input type="checkbox"  {if $permission eq '0' AND $check eq 'user' OR $userView neq '0'}  disabled {/if} value="{$reservation->SeriesId}" name="reservations[]"><input type="hidden" name="timezone" id="timezone" value="{$Timezone}"></td>
+			<input type="checkbox"  {if $permission eq '0' AND $check eq 'user' OR $userView neq '0'}  disabled {/if} value="{$reservation->SeriesId}@{$reservation->ScheduleId}" name="reservations[]"><input type="hidden" name="timezone" id="timezone" value="{$Timezone}"><input type="hidden" name="scheduleId[]" id="scheduleId[]" value="{$reservation->ScheduleId}"></td>
 		</tr>
 
 		{*<label>{translate key='CheckInTime'}</label> {formatdate date=$reservation->CheckinDate timezone=$Timezone key=short_datetime}*}
@@ -159,18 +159,20 @@ $(function () {
 		$('#report-no-data, #report-results').trigger('loaded');
 		
 		 $("#Move_reservation").click(function(){
-		    	var reservationChecked = []
+		    	var reservationChecked = [];
+		    	var scheduleId = [];
 		    	var timezone = $('#timezone').val();
 		        $("input[name='reservations[]']:checked").each(function ()
-		        {
-		        	reservationChecked.push(parseInt($(this).val()));
+		        {			        
+		        	reservationChecked.push($(this).val());
 		        });
 				
 		    	 
 				$.post("move_action.php",
 						  {
 						    seriesId: reservationChecked,
-						    timezone:timezone
+						    timezone:timezone,
+						    scheduleId:scheduleId
 						  },
 						  function(data, status){
 							  $('.modal-body').html(data);

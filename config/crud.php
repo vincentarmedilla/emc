@@ -161,7 +161,7 @@ class bookingClass {
         $ids = join(', ', $group_id);
         $schedule = $this->conn->prepare("select * from schedules where admin_group_id IN ($ids)");
         $schedule->execute();
-        return $schedule->fetchAll();
+        return $schedule->fetchAll(PDO::FETCH_ASSOC);
     }
     
     public function AllSchedule()
@@ -864,6 +864,47 @@ class bookingClass {
         return $nn->fetchAll(PDO::FETCH_ASSOC);
     }
     
+    function getGroupAuditrail($gid)
+    {
+        $search = $_GET['referenceId'];
+        $id = array();
+        foreach($gid as $gi) {
+            $id[] = $gi['group_id'];
+        }
+        $ids = join(', ', $id);
+        $announce = $this->conn->prepare("select * from audit_trail_groups where group_id IN ($ids)");
+        $announce->execute();
+        
+        
+        $tid = array();
+        foreach($announce->fetchAll(PDO::FETCH_ASSOC) as $nid) {
+            $tid[] = $nid['audit_trail_id'];
+        }
+        
+        $i = join(', ', $tid);
+        
+        $query = "select a.*,b.fname,b.lname,c.name from audit_trail a
+                                     left join users b on a.user_id = b.user_id
+                                    left join schedules c on a.schedule_id = c.schedule_id
+                                    where a.audit_trail_id  IN ($i) and a.reference_id LIKE '%".$search."%'";
+        if($_GET['scheduleId'])
+            $query .= " AND a.schedule_id = '$_GET[scheduleId]' ";
+        
+       if($_GET['auditAction'])
+           $query .= " AND a.action = '$_GET[auditAction]' ";
+       
+       if($_GET['userOwner'])
+               $query .= " AND a.user_id = '$_GET[userOwner]' ";
+           
+       if($_GET['startDate'])
+               $query .= " AND a.dtr BETWEEN '$_GET[startDate]' AND  '$_GET[endDate]'";
+            
+        
+        $nn = $this->conn->prepare($query);
+        $nn->execute();
+        return $nn->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
     
     function checkBloked($id)
     {
@@ -923,13 +964,56 @@ class bookingClass {
     
     function getReservations($seriesId)
     {
-        $ids = join(', ', $seriesId);
+       
+        foreach($seriesId as $value) {
+            $ids1 = explode("@",$value);
+            $ids2[] = $ids1[0];
+            $schid[] = $ids1[1];
+        }
+        
+        $ids = join(', ', $ids2);
+        
         $move = $this->conn->prepare("SELECT  a.*, b.* from  reservation_series a
                                     left join reservation_instances b on a.series_id = b.series_id
                                     where a.series_id IN ($ids)");
         $move->execute();
-        return $move->fetchAll(PDO::FETCH_ASSOC);
+        
+        $sc = join(', ', $schid);
+        
+        foreach($schid as $val) {
+            $glayout1 = $this->conn->prepare("SELECT layout_id from schedules where schedule_id = '$val'");
+            $glayout1->execute();
+            $ly[] = $glayout1->fetchAll(PDO::FETCH_ASSOC);
+        }
+       
+        $layoutIds= array_reduce($ly, 'array_merge', array());
+        
+        foreach( $layoutIds as $key => $value) {
+            $gtime = $this->conn->prepare("SELECT * from time_blocks where layout_id = '$value[layout_id]'");
+            $gtime->execute();
+            $gt[] = $gtime->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        $rs = $move->fetchAll(PDO::FETCH_ASSOC);
+         
+        //$arr_res = array_replace_recursive($rs, $gt);
+        
+        
+        foreach($rs as $key => $val){
+            foreach($gt as $key1 => $val) {
+                if($key == $key1) {
+                    $rs[$key]['d'] = $gt[$key1];
+                }
+            }
+        }
+        
+        //echo '<pre>';print_r($rs);echo '</pre>';
+       // echo '<pre>';print_r($gt);echo '</pre>';
+        
+        return $rs;
     }
+    
+    
     
     function getReservationsResources($referenceNo)
     {
@@ -1082,11 +1166,17 @@ class bookingClass {
                     $q->execute(array(':reference_number'=>$rf[$count],':start_date'=>$outputS, ':end_date'=>$outputE));
                     echo 'Your reference Number is <a href=reservation.php?rn='.$rf[$count].' style=color:green target="_blank">'.$rf[$count].'</a><br>';
                     $dateStart = new DateTime($start);
+                    $nm = array();
                     echo '<strong>New Date</strong>: '.$dateStart->format('m/d/Y h:i:s a').'<br>';
                     echo 'Resources: ';
+                    
                     foreach( $resources as $key => $value) {
-                        echo $value['name'].',';
+                        if($value['name'] != '') {
+                            $nm[] = $value['name'];
+                        }
                     }
+                    echo implode(', ', $nm);
+                    echo '<br><br>';
                    
                 } else {
                     $sql = "UPDATE reservation_instances SET start_date =:start_date, end_date =:end_date WHERE reference_number=:reference_number";
@@ -1096,21 +1186,28 @@ class bookingClass {
                     $dateStart = new DateTime($start);
                     echo '<strong>New Date</strong>: '.$dateStart->format('m/d/Y h:i:s a').'<br>';
                     echo 'Resources: ';
+                    //echo '<pre>';print_r($resources);echo '</pre>';
                     foreach( $resources as $key => $value) {
-                        echo $value['name'].',';
+                        if($value['name'] != '') {
+                            $nm[] = $value['name'];
+                        }               
                     }
+                    echo implode(', ', $nm);
+                    
                 }
             }
             //return true;
            // echo $id[$count].'='.$un[$count].'<br>';
             } else {
-                echo 'Move Not ALLowed<br>';
+                echo 'This action is not allowed due to a post check-in/out conflict with Reference Number <a href=reservation.php?rn='.$rf[$count].' style=color:red target="_blank">'.$rf[$count].'</a><br>';
             }
             } else {
-                echo 'Your reference Number  <a href=reservation.php?rn='.$rf[$count].' style=color:red target="_blank">'.$rf[$count].'</a> has conflict<br><br>';
+                echo 'This action is not allowed due to a reservation conflict';
+                echo ' with Reference Number <a href=reservation.php?rn='.$rf[$count].' style=color:red target="_blank">'.$rf[$count].'</a><br><br>';
             }
             } else {
-                echo 'Your reference Number  <a href=reservation.php?rn='.$rf[$count].' style=color:red target="_blank">'.$rf[$count].'</a> has conflict in block<br>';
+                echo 'This action is not allowed due to a blackout times conflict';
+                echo ' with Reference Number <a href=reservation.php?rn='.$rf[$count].' style=color:red target="_blank">'.$rf[$count].'</a><br><br>';
             }
         }
         
@@ -1148,12 +1245,19 @@ class bookingClass {
         return $resources->fetch(PDO::FETCH_ASSOC);
     }
     
-    public  function  InsertAUditTrail($contents,$rf,$user,$old,$new,$type,$action)
+    public  function  InsertAUditTrail($contents,$rf,$user,$old,$new,$type,$action,$gid,$sid,$dateUpdated,$dtb)
     {
         $cn = json_encode($contents);
-        $sql = "INSERT INTO audit_trail SET content=:content,user_id=:user_id,reference_id=:reference_id,new_data=:new_data,old_data=:old_data,type=:type,action=:action ";
+        $sql = "INSERT INTO audit_trail SET content=:content,user_id=:user_id,reference_id=:reference_id,new_data=:new_data,old_data=:old_data,type=:type,action=:action,schedule_id=:schedule_id,date_time_update=:date_time_update,dtb=:dtb ";
         $q = $this->conn->prepare($sql);
-        $q->execute(array(':content'=>$cn,':user_id'=>$user,':reference_id' => $rf, ':old_data' => $old,':new_data' => $new,':type' => $type, ':action' => $action));
+        $q->execute(array(':content'=>$cn,':user_id'=>$user,':reference_id' => $rf, ':old_data' => $old,':new_data' => $new,':type' => $type, ':action' => $action,':schedule_id' => $sid, ':date_time_update' => $dateUpdated,':dtb' => $dtb));
+        
+        $lastId = $this->conn->lastInsertId();
+        $sql_2 = "INSERT INTO audit_trail_groups SET audit_trail_id=:audit_trail_id,group_id=:group_id";
+        $q_2 = $this->conn->prepare($sql_2);
+        $q_2->execute(array(':audit_trail_id'=>$lastId,':group_id'=>$gid));
+        
+        
         return true;
     }
     
@@ -1193,7 +1297,7 @@ class bookingClass {
         $riData = $ri->fetch(PDO::FETCH_ASSOC);
         
         $uid = explode("=",$user);
-        
+        //echo $uid[1].' '.$riData['series_id'];exit();
         
         $sql = "INSERT INTO reservation_users SET reservation_instance_id=:reservation_instance_id,user_id=:user_id,reservation_user_level=:reservation_user_level";
         $q = $this->conn->prepare($sql);
@@ -1215,6 +1319,60 @@ class bookingClass {
         $ru = $this->conn->prepare("select user_id from reservation_users where reservation_instance_id  = '$riData[reservation_instance_id]'");
         $ru->execute();
         return $ru->fetchAll(PDO::FETCH_NUM);
+    }
+    
+    public function checkHumanResource($id)
+    {
+        $rs = $this->conn->prepare("select * from resources where resource_id  = '$id'");
+        $rs->execute();
+        return $rs->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    public function getCurrentResources($referenceId)
+    {
+        $ri = $this->conn->prepare("select * from reservation_instances where reference_number  = '$referenceId'");
+        $ri->execute();
+        $riData = $ri->fetch(PDO::FETCH_ASSOC);
+        
+        
+        $ru = $this->conn->prepare("select resource_id from reservation_resources where series_id  = '$riData[series_id]'");
+        $ru->execute();
+        return $ru->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getCurrentEngineer($referenceId,$reservation_users_level )
+    {
+        $ri = $this->conn->prepare("select * from reservation_instances where reference_number  = '$referenceId'");
+        $ri->execute();
+        $riData = $ri->fetch(PDO::FETCH_ASSOC);
+        
+        
+        $ru = $this->conn->prepare("select user_id from reservation_users where reservation_instance_id  = '$riData[reservation_instance_id]' and reservation_user_level = '$reservation_users_level'");
+        $ru->execute();
+        return $ru->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getResources($rid)
+    {
+        $ids = join(', ', $rid);
+        $resources = $this->conn->prepare("select name from resources where resource_id  IN ($ids)");
+        $resources->execute();
+        return $resources->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getProjectLeads($uid)
+    {
+        $ids = join(', ', $uid);
+        $resources = $this->conn->prepare("select email from users where user_id  IN ($ids)");
+        $resources->execute();
+        return $resources->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getUserInfo($uid)
+    {
+        $u = $this->conn->prepare("select email from users where user_id  = '$uid'");
+        $u->execute();
+        return $u->fetch(PDO::FETCH_ASSOC);
     }
 }
 

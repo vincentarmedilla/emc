@@ -4,7 +4,9 @@ error_reporting(0);
     require_once('../config/crud.php');
     
     $obj = new bookingClass;
-    
+   
+  
+  
     $res = $obj->getReservations($_POST['seriesId']);
     
     $layout = $obj->getLayout($_POST['timezone']);
@@ -148,7 +150,7 @@ $(document).ready(function () {
      <!--<div <?php if($row['repeat_type'] != 'none') {?> disabled  <?php }?>>-->
     	<input type="text" id="BeginDate<?php echo $row['reference_number'];?>" name="BeginDate[]" class="form-control input-sm inline-block dateinput" value="<?php echo date('m/d/Y', strtotime($stw));?>"/>
     	<select name="BeginTime[]">
-    		<?php foreach ($bl as $b) {?>
+    		<?php foreach ($row['d'] as $b) {?>
     		<option <?php if($b['start_time'] == $st1) {?> selected <?php }?> value="<?php echo $b['start_time']; ?>"><?php $date = new DateTime($b['start_time']);     echo $date->format('h:i a') ;?></option>
     		<?php } ?>
     	</select>
@@ -159,7 +161,7 @@ $(document).ready(function () {
     
     	<input type="text" id="EndDate<?php echo $row['reference_number'];?>" name="EndDate[]" class="form-control input-sm inline-block dateinput" value="<?php echo date('m/d/Y', strtotime($etw));?>"/>
     	<select name="EndTime[]">
-    		<?php foreach ($bl as $b) {?>
+    		<?php foreach ($row['d'] as $b) {?>
     		<option <?php if($b['end_time'] == $et1) {?> selected <?php }?> value="<?php echo $b['end_time'];?>"><?php $date = new DateTime($b['end_time']);     echo $date->format('h:i a') ;?></option>
     		<?php } ?>
     	</select>
