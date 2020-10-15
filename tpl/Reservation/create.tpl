@@ -73,6 +73,12 @@ along with Booked Scheduler.  If not, see <http://www.gnu.org/licenses/>.
 $(document).ready(function(){
 	$(".error_message").hide();
     $(".nomail").hide();
+
+    $('#users_owner').on('change', function() {
+        
+        var uid = $('#newUserId').val($(this).val());
+       
+    	});
 });
 </script>
 <div id="page-reservation">
@@ -88,6 +94,7 @@ $(document).ready(function(){
     				<label class="radio-inline">
       					<input type="radio" id="status" name="status" value="2" {if $status eq '2'} checked {/if}>Confirmed
     				</label>
+    				<input type="hidden" name="status_hidden" id="status_hidden" value="{$status}">
                 </div>
 
                 <div class="col-md-6 col-xs-12 col-top">
@@ -167,7 +174,7 @@ $(document).ready(function(){
                             <label for="changeUserAutocomplete" class="no-show">{translate key=User}</label>
 <!--                             <input type="text" id="changeUserAutocomplete" -->
 <!--                                    class="form-control inline-block user-search"/> -->
-								<select id="users" name="users" class="form-control selectpicker" data-live-search="true">
+								<select id="users_owner" name="users_owner" class="form-control selectpicker" data-live-search="true">
 					<option value="" selected disabled>Select User</option>
 					{foreach from=$admin_users key=myId item=i name=foo}
 						
@@ -177,8 +184,9 @@ $(document).ready(function(){
 						
 					{/foreach}
 				</select>
-				
-				<input id="userId" type="hidden" {formname key=USER_ID} value="{$UserId}"/>
+				<input type="hidden" name="newUserId" id="newUserId" value="">
+				<input id="userId" name="userId" type="hidden" {formname key=USER_ID} value="{$UserId}"/>
+				<input id="userId_hidden" name="userId_hidden" type="hidden" {formname key=USER_ID} value="{$UserId}"/>
 <!--                             | -->
 <!--                             <button id="promptForChangeUsers" type="button" class="btn inline"> -->
 <!--                                 <i class="fa fa-users"></i> -->
@@ -196,6 +204,7 @@ $(document).ready(function(){
                                        value="{formatdate date=$StartDate}" />
                                 <input type="hidden" id="formattedBeginDate" {formname key=BEGIN_DATE}
                                        value="{formatdate date=$StartDate key=system}"/>
+                                       
                                 <select id="BeginPeriod" {formname key=BEGIN_PERIOD}
                                         class="form-control input-sm inline-block timeinput{if $LockPeriods} no-show{/if}"
                                         title="Begin time" >
@@ -252,7 +261,7 @@ $(document).ready(function(){
                     </div>
 
                     {if !$HideRecurrence}
-                        <div class="col-xs-12" {if $durations neq ''}  style="pointer-events:none;" {/if}>
+                        <div class="col-xs-12" {if $durations neq ''}  disabled {/if}>
                             {control type="RecurrenceControl" RepeatTerminationDate=$RepeatTerminationDate}
                         </div>
                     {/if}
@@ -335,7 +344,7 @@ $(document).ready(function(){
 
                     <div class="col-xs-12 reservationDescription">
                         <div class="form-group has-feedback">
-                            <label for="reservationTitle">Description of booking</label>
+                            <label for="reservationTitle">Description of Reservation</label>
                             <textarea id="description" name="{FormKeys::DESCRIPTION}"
                                       class="form-control" data-validation-length="min4" data-validation-error-msg="Description is Required"
                                       {if $DescriptionRequired}required="required"{/if}>{$Description}</textarea>
@@ -393,11 +402,14 @@ $(document).ready(function(){
                     <div class="col-xs-12">
                         <div class="form-group">
                             <label><input type="checkbox" {if $cos eq 'Yes'} checked {/if}  name="client_on_sites" id="client_on_sites" value="Yes">Client On Site?</label>
+                            <input type="hidden" id="client_on_sites_hidden" name="client_on_sites_hidden" value="{$cos}">
                             
                             &nbsp;&nbsp;&nbsp;
                             <label><input type="checkbox" {if $sos eq 'Yes'} checked {/if} name="sample_on_site" id="sample_on_site" value="Yes">Sample On Site?</label>
+                            <input type="hidden" id="sample_on_site_hidden" name="sample_on_site_hidden" value="{$sos}">
                             &nbsp;&nbsp;&nbsp;
                             <label><input type="checkbox" {if $smarty.get.rn eq ''}checked {else}{/if} {if $billable eq '1'} checked {/if} name="billable" id="billable" value="1">Billable</label>
+                            <input type="hidden" id=billable_hidden" name="billable_hidden" value="{$billable}">
                         </div>
                     </div>
                 </div>
@@ -659,7 +671,7 @@ $(document).ready(function(){
                                 {if {$row->email} eq ''}
                                     <li class="jqtree_common">
                                         {else}
-                                    <li class="jqtree_common" style="display: none">
+                                    <li class="jqtree_common"  style="display: none">
                                 {/if}
                                 {*<li class="jqtree_common">*}
                                         <div class="jqtree-element jqtree_common">
@@ -948,13 +960,13 @@ $(document).ready(function(){
     		//alert($('#EndPeriod option:selected').val());
     	}
 		
-    	$('#users').on('change', function() {
+    	$('#users_owner').on('change', function() {
     		var items = this.value.split('=');
     		
-    		$('input[id=userId]').val(items[1]);
+    		//$('input[id=userId]').val(items[1]);
     		
     		$("#userName").text(items[0]);
-    		$("#userName").attr("data-userid",items[1]);
+    		//$("#userName").attr("data-userid",items[1]);
     	});
 
         var scopeOptions = {

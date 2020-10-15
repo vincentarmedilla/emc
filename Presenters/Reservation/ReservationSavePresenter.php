@@ -82,7 +82,15 @@ class ReservationSavePresenter implements IReservationSavePresenter
 
 	public function BuildReservation()
 	{
-		$userId = $this->page->GetUserId();
+	    if($_POST['newUserId'] == "") {
+	        $uid = $_POST['userId'];
+	    } else {
+	        $ui = explode("=", $_POST['newUserId']);
+	        $uid = $ui[1];
+	    }
+	    
+		//$userId = $this->page->GetUserId();
+	    $userId = $uid;
 		$primaryResourceId = $this->page->GetResourceId();
 		$resource = $this->resourceRepository->LoadById($primaryResourceId);
 		$title = $this->page->GetTitle();
