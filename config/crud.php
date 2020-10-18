@@ -964,7 +964,6 @@ class bookingClass {
     
     function getReservations($seriesId)
     {
-       
         foreach($seriesId as $value) {
             $ids1 = explode("@",$value);
             $ids2[] = $ids1[0];
@@ -989,7 +988,7 @@ class bookingClass {
         $layoutIds= array_reduce($ly, 'array_merge', array());
         
         foreach( $layoutIds as $key => $value) {
-            $gtime = $this->conn->prepare("SELECT * from time_blocks where layout_id = '$value[layout_id]'");
+            $gtime = $this->conn->prepare("SELECT * from time_blocks where layout_id = '$value[layout_id]' and availability_code = '1'");
             $gtime->execute();
             $gt[] = $gtime->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -1047,6 +1046,7 @@ class bookingClass {
         $tz = str_replace("GGG","/",$timezone);
         $un = $until;
         $resource = $resourceid;
+        
         for($count = 0; $count < count($referenceNo); $count++)
         {
             $start = $bD[$count].' '.$bT[$count];
@@ -1153,6 +1153,10 @@ class bookingClass {
             
            
             //print_r($series);exit();
+            //last modified
+            date_default_timezone_set($tz);
+            $outputLastModified = date('Y/m/d h:i:s', time());
+            
             
             if ((strtotime($outputS)) > (strtotime($outputE)))
             {
@@ -1161,6 +1165,10 @@ class bookingClass {
                 
             } else {
                 if(empty($un[$count])) {
+                    $lmd = "UPDATE reservation_series SET last_modified =:last_modified WHERE series_id=:series_id";
+                    $ld = $this->conn->prepare($lmd);
+                    $ld->execute(array(':series_id'=>$id[$count],':last_modified'=>$outputLastModified));
+                    
                     $sql = "UPDATE reservation_instances SET start_date =:start_date, end_date =:end_date WHERE reference_number=:reference_number";
                     $q = $this->conn->prepare($sql);
                     $q->execute(array(':reference_number'=>$rf[$count],':start_date'=>$outputS, ':end_date'=>$outputE));
@@ -1179,6 +1187,10 @@ class bookingClass {
                     echo '<br><br>';
                    
                 } else {
+                    $lmd = "UPDATE reservation_series SET last_modified =:last_modified WHERE series_id=:series_id";
+                    $ld = $this->conn->prepare($lmd);
+                    $ld->execute(array(':series_id'=>$id[$count],':last_modified'=>$outputLastModified));
+                    
                     $sql = "UPDATE reservation_instances SET start_date =:start_date, end_date =:end_date WHERE reference_number=:reference_number";
                     $q = $this->conn->prepare($sql);
                     $q->execute(array(':reference_number'=>$rf[$count],':start_date'=>$outputS, ':end_date'=>$outputE));
