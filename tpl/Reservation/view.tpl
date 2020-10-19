@@ -152,8 +152,12 @@ along with Booked Scheduler.  If not, see <http://www.gnu.org/licenses/>.
                         <div><label>Request No.</label>&nbsp;{$resourcedetails['request_no']}</div>
                         <div><label>Client on site</label>&nbsp;{$resourcedetails['client_on_site']}</div>
                         <div><label>Sample on site</label>&nbsp;{$resourcedetails['sample_on_site']}</div>
+                        <div><label>Billable</label>&nbsp;{if $resourcedetails['billable'] eq '1'}Yes{else}No{/if}</div>
+                        <div><label>Status</label>&nbsp;{if $resourcedetails['status'] eq '2'}Confirmed{else}Temporary{/if}</div>
                     </div>
                 </div>
+                
+
 
                 {if $ShowParticipation && $AllowParticipation && $ShowReservationDetails}
                     <div class="{$participantCol}">
@@ -197,28 +201,7 @@ along with Booked Scheduler.  If not, see <http://www.gnu.org/licenses/>.
                                 {/if}
                             </div>*}
 
-                            <div id="joinReservation" class="participationAction">
-                                {if $AllowParticipantsToJoin && !$IAmParticipating && !$IAmInvited && $CanAlterParticipation}
-                                    <div class="alert alert-info " role="alert">
-                                        <strong>{translate key=YouCanJoinThisReservation}</strong>
-                                        {if $IsRecurring}
-                                            <button value="{InvitationAction::JoinAll}" id="btnJoinSeries"
-                                                    class="btn btn-xs btn-info participationAction">
-                                                <i class="fa fa-user-plus"></i> {translate key="AllInstances"}
-                                            </button>
-                                            <button value="{InvitationAction::Join}" id="btnJoinInstance"
-                                                    class="btn btn-xs btn-info participationAction">
-                                                <i class="fa fa-user-plus"></i> {translate key="ThisInstance"}
-                                            </button>
-                                        {else}
-                                            <button value="{InvitationAction::Join}" id="btnJoin"
-                                                    class="btn btn-xs btn-info participationAction">
-                                                <i class="fa fa-user-plus"></i> {translate key="Join"}
-                                            </button>
-                                        {/if}
-                                    </div>
-                                {/if}
-                            </div>
+                           
 
                             <span id="participate-indicator" class="fa fa-spinner fa-spin" style="display:none;"></span>
 
@@ -241,6 +224,52 @@ along with Booked Scheduler.  If not, see <http://www.gnu.org/licenses/>.
                                         <div class="no-data">{translate key='None'}</div>
                                     {/foreach}
                                 </div>
+                    <div class="form-group" style="padding-top: 10px;">
+                    <label for="actualEnd" id="lblAe">Notes</label>
+                      <div>{$durationNotes}</div>
+                    </div>            
+                   <div class="col-xs-12" style="padding-left: 1px;">
+                	<div class="row">
+    						 <div class="col-sm-3"><label for="actualEnd" id="lblAe">Date</label></div>
+    						 <div class="col-sm-3"><label for="actualEnd" id="lblAe">Actual Start</label></div>
+    						 <div class="col-sm-3"><label for="actualEnd" id="lblAe">Actual End</label></div>
+    						 <div class="col-sm-3"><label for="actualEnd" id="lblAe">Duration</label></div>
+						</div>
+					
+               			{foreach from=$durations item=md}
+               			{assign var=timedate value="=>"|explode:$md}
+                    	<div class="row" style="padding-bottom: 20px">
+                    	<div class="col-sm-3">
+                           
+                            <input type="text" class="form-control" disabled  value="{$timedate[0]}" onfocusout="checkStartTime();">
+                             <input type="hidden" id="endDating[]" name="endDating[]" class="form-control"  value="{$timedate[0]}" onfocusout="checkStartTime();">
+                       </div>
+                    	<div class="col-sm-3">
+                           
+                           
+                            <input type="time" id="as[]" name="as[]" class="form-control"  value="{$timedate[1]}" onfocusout="checkStartTime();" disabled>
+                             
+                       </div>
+                       <div class="col-sm-3">
+                           
+                            
+                            {if $timedate[2] eq '24:00'}
+                            <input type="time" id="ae[]" name="ae[]" class="form-control" value="00:00" onfocusout="checkTimeDuration();" disabled>
+                            {else}
+                            <input type="time" id="ae[]" name="ae[]" class="form-control" value="{$timedate[2]}" onfocusout="checkTimeDuration();" disabled>
+                            {/if}
+                            
+                            
+                       </div>
+                        <div class="col-sm-3">
+                            
+                            
+                            <input type="text" disabled value="{$timedate[3]}" class="form-control" > 
+                       </div>
+                       </div>
+					{/foreach}
+					<div style="float:right"><label for="duration" id="lblDuration"></label><p id="diff">{$total_hours}</p></div>
+                </div>
                             {/if}
                         </div>
                     </div>
