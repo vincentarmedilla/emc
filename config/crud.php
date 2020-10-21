@@ -1047,6 +1047,7 @@ class bookingClass {
         $un = $until;
         $resource = $resourceid;
         
+        
         for($count = 0; $count < count($referenceNo); $count++)
         {
             $start = $bD[$count].' '.$bT[$count];
@@ -1150,12 +1151,12 @@ class bookingClass {
             
             $checkdate = $this->conn->prepare("select * from reservation_instances WHERE (start_date >= '$outputS' AND start_date <= '$outputE') OR
 					(end_date >= '$outputS' AND end_date <= '$outputE') OR (start_date <= '$outputS' AND end_date >= '$outputE')");
-            
-           
-            //print_r($series);exit();
+                     
             //last modified
-            date_default_timezone_set($tz);
-            $outputLastModified = date('Y/m/d h:i:s', time());
+            $ldf = date('Y-m-d h:i:s');
+            $ldf1 = new DateTime($ldf, new DateTimeZone("UTC"));
+            $ldf1->setTimezone(new DateTimeZone($tz));
+            $outputLastModified = $ldf1->format("Y-m-d H:i:s");
             
             
             if ((strtotime($outputS)) > (strtotime($outputE)))
@@ -1310,6 +1311,11 @@ class bookingClass {
         
         $uid = explode("=",$user);
         //echo $uid[1].' '.$riData['series_id'];exit();
+        
+        //delete current owner
+        $dlo="DELETE FROM reservation_users WHERE reservation_instance_id=:reservation_instance_id AND reservation_user_level=:reservation_user_level";
+        $q1 = $this->conn->prepare($dlo);
+        $q1->execute(array(':reservation_instance_id'=>$riData['reservation_instance_id'],':reservation_user_level'=> '1'));
         
         $sql = "INSERT INTO reservation_users SET reservation_instance_id=:reservation_instance_id,user_id=:user_id,reservation_user_level=:reservation_user_level";
         $q = $this->conn->prepare($sql);
